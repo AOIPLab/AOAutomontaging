@@ -63,11 +63,15 @@ handles.combinedFile_names=[];
 handles.postionFile_name=[];
 handles.imgfolder_name=[];
 handles.imageFile_names=[];
-handles.modalitiesInfo = {'Confocal' 'confocal';
-    'Split Detection' 'split';
-    'Dark Field' 'avg';
+handles.modalitiesInfo = {'NIR Confocal' 'NIRCON';
+    'NIR Split Detection' 'split_det';
+    'NIR Dark Field' 'avg_7';
     'Modality 4' '';
-    'Modality 5' '';};
+    'Modality 5' '';
+    'Modality 6' '';
+    'Modality 7' '';
+    'Modality 8' '';
+    'Modality 9' '';};
 handles.inputExt = 1;
 handles.device_mode = 'multi_modal';
 %default to .tif
@@ -401,7 +405,7 @@ Prompt(1,:) = {'Filename substrings for identifying each modality:','modalitiesI
 Formats(1,1).type = 'table';
 Formats(1,1).format = {'char', 'char'}; % table (= table in main dialog) / window (= table in separate dialog)
 Formats(1,1).items = {'Modality Name' 'Substring'};
-Formats(1,1).size = [158.5 106];
+Formats(1,1).size = [275 175];
 Formats(1,1).margin = 2;
 Formats(1,1).span = [1 1];  % item is 2 field x 1 fields
 Formats(1,1).labelloc = 'topcenter';
@@ -439,11 +443,15 @@ set(handles.multi_modal_device, 'Checked', 'on');
 set(handles.selectPosFile, 'Enable','on');
 set(handles.inputsettings,'Enable','on');
 
-handles.modalitiesInfo = {'Confocal' 'confocal';
-                          'Split Detection' 'split';
-                          'Dark Field' 'avg';
+handles.modalitiesInfo = {'NIR Confocal' 'NIRCON';
+                          'NIR Split Detection' 'split_det';
+                          'NIR Dark Field' 'avg_7';
                           'Modality 4' '';
-                          'Modality 5' '';};
+                          'Modality 5' '';
+                          'Modality 6' '';
+                          'Modality 7' '';
+                          'Modality 8' '';
+                          'Modality 9' '';};
 handles.device_mode = 'multi_modal';
 guidata(hObject, handles);
 
