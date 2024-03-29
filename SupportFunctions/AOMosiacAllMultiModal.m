@@ -52,12 +52,7 @@ ROICropPct = 0;
 parallelFlag = exist('parfor');
 
 %load data
-[inData, MN, errorFlag] = organizeDataByModality(imageDir, ModalitiesSrchStrings);
-if(errorFlag)
-    errordlg(errorFlag);
-    outNameList = [];
-    return
-end
+[inData, MN] = organizeDataByModality(imageDir, ModalitiesSrchStrings);
 N = size(inData,2);
 
 %initialize all variables
@@ -74,7 +69,7 @@ ResultsTransformToRef = zeros(3,3,N,N);
 %read position file
 [imageFilename, eyeSide, pixelScale, LocXY, ID, NC, errorFlag] = readPositionFile(imageDir, inData, posFileLoc, device_mode, matchexp, MN, N);
 %catch errors
-if(errorFlag)
+if ischar(errorFlag)
     errordlg(errorFlag);
     outNameList = [];
     return
@@ -139,9 +134,6 @@ else
                 end
             end
         else%if not calculate sift features
-            SiftLevel = 55; %The number of levels to use in SIFT, default
-            ROICropPct = 0; %Sets a percentage crop on the boundaries of the image, where SIFT features are
-
             if(parallelFlag)
                 
                 parfor m = 1:MN
@@ -245,6 +237,7 @@ while (sum(Matched) < N)
                                     ',',num2str(LocXY(2,refIndex)),')','.jpg');
                                 
                                 saveMatchesName=fullfile(outputDir,saveMatchesName);
+                                
                                 [relativeTransform, numOkMatches, numMatches, bestScale]=sift_mosaic_fast_MultiModal(refImg, currentImg, saveMatchesName,0,f_all(:,refIndex),d_all(:,refIndex),f_all(:,n),d_all(:,n),TransType,[],featureType);
                                 
                                 ResultsNumOkMatches(n,refIndex) = numOkMatches;
@@ -415,18 +408,17 @@ for i = 1:NumOfRefs %ToDo: not very efficient... but small number of pieces in g
     ind = find(CoMX == CoMX(i));%find where location matches exactly
     maxXRef(ind) = max(maxXRef(ind));%set to max
     minXRef(ind) = min(minXRef(ind));%set to min
-    
+
     ind = find(CoMY == CoMY(i));%find where location matches exactly
     maxYRef(ind) = max(maxYRef(ind));%set to max
     minYRef(ind) = min(minYRef(ind));%set to min
 end
 
-minXRef(isnan(CoMX)) = min(minXRef(~isnan(CoMX))); 
-minYRef(isnan(CoMY)) = min(minYRef(~isnan(CoMY))); 
- 
-maxXRef(isnan(maxXRef)) = max(maxXRef(~isnan(CoMX))); 
-maxYRef(isnan(CoMY)) = max(maxYRef(~isnan(CoMY))); 
+minXRef(isnan(CoMX)) = min(minXRef(~isnan(CoMX)));
+minYRef(isnan(CoMY)) = min(minYRef(~isnan(CoMY)));
 
+maxXRef(isnan(maxXRef)) = max(maxXRef(~isnan(CoMX)));
+maxYRef(isnan(CoMY)) = max(maxYRef(~isnan(CoMY)));
 
 for s = 2:NumOfRefs %no need to translate the first one, start at 2
     
@@ -434,27 +426,26 @@ for s = 2:NumOfRefs %no need to translate the first one, start at 2
     %add width and pad for all previous pieces that do not share a number
     %The center of each piece starts at the same location (0,0), so the width we add is
     %max loc of the bounding of the previous image, and subtract min loc of the current image
-    if ~isnan( CoMX(refOrderX_I(s)) ) 
-        if(CoMX(refOrderX_I(s)) == CoMX(refOrderX_I(s-1))) %if same location as previous, use previous translation 
-            refGlobalTransX(refOrderX_I(s)) = refGlobalTransX(refOrderX_I(s-1)); 
- 
-        else%if different location, then use previous translation + max loc of previous location + pad - min loc of own 
-            refGlobalTransX(refOrderX_I(s)) = refGlobalTransX(refOrderX_I(s-1)) ... 
-                + maxXRef(refOrderX_I(s-1)) - minXRef(refOrderX_I(s)) + pad; 
-        end 
-    end 
-    
-    if ~isnan( CoMY(refOrderY_I(s)) ) 
-        if(CoMY(refOrderY_I(s)) == CoMY(refOrderY_I(s-1))) 
-            refGlobalTransY(refOrderY_I(s)) = refGlobalTransY(refOrderY_I(s-1)); 
-        else 
-            refGlobalTransY(refOrderY_I(s)) = refGlobalTransY(refOrderY_I(s-1)) ... 
-                + maxYRef(refOrderY_I(s-1)) - minYRef(refOrderY_I(s)) + pad; 
-        end 
+    if ~isnan( CoMX(refOrderX_I(s)) )
+        if(CoMX(refOrderX_I(s)) == CoMX(refOrderX_I(s-1))) %if same location as previous, use previous translation
+            refGlobalTransX(refOrderX_I(s)) = refGlobalTransX(refOrderX_I(s-1));
+
+        else%if different location, then use previous translation + max loc of previous location + pad - min loc of own
+            refGlobalTransX(refOrderX_I(s)) = refGlobalTransX(refOrderX_I(s-1)) ...
+                + maxXRef(refOrderX_I(s-1)) - minXRef(refOrderX_I(s)) + pad;
+        end
+    end
+    if ~isnan( CoMY(refOrderY_I(s)) )
+        if(CoMY(refOrderY_I(s)) == CoMY(refOrderY_I(s-1)))
+            refGlobalTransY(refOrderY_I(s)) = refGlobalTransY(refOrderY_I(s-1));
+        else
+            refGlobalTransY(refOrderY_I(s)) = refGlobalTransY(refOrderY_I(s-1)) ...
+                + maxYRef(refOrderY_I(s-1)) - minYRef(refOrderY_I(s)) + pad;
+        end
     end
 end
 
-%Now adjust each transformation according to which piece they're in
+%%Now adjust each transformation according to which piece they're in
 for i = 1: NumOfRefs
     refGlobalTrans = eye(3,3);
     refGlobalTrans(1,3) = -refGlobalTransX(i); %these are pullback transforms, so negative of the distance you want to move
@@ -465,7 +456,7 @@ for i = 1: NumOfRefs
 end
 
 
-%calculate global bounding box
+%%calculate global bounding box
 maxXAll =-1000000000;
 minXAll =1000000000;
 maxYAll =-1000000000;
@@ -492,7 +483,7 @@ for n = 1:N
     end
 end
 
-%this is the image grid to output
+%%this is the image grid to output
 ur = minXAll:maxXAll;
 vr = minYAll:maxYAll;
 % [u,v] = meshgrid(ur,vr) ;
@@ -511,10 +502,10 @@ fovlist = cellfun(@(n) num2str(n,'%0.2f'), num2cell(round(fovlist,2)),'UniformOu
 save(fullfile(outputDir,'AOMontageSave'),'LocXY','inData','TransType',...
     'ResultsNumOkMatches','ResultsNumMatches',...
     'ResultsTransformToRef','f_all','d_all','N','ResultsScaleToRef','MatchedTo','TotalTransform',...
-    'RelativeTransformToRef','pixelScale');
+    'RelativeTransformToRef');
 
 %% Determine the dominant direction of each shifted image
-Global=[1 0 0; 0 1 0;-minXAll -minYAll 1]; 
+Global=[1 0 0; 0 1 0;-minXAll -minYAll 1];
 if export_to_pshop
     group_directions = cell(NumOfRefs,1);
     for i = 1: NumOfRefs
@@ -537,16 +528,16 @@ if export_to_pshop
             
             if ind==1
                 if sign(H(ind,3)) == 1
-                    if strcmpi(eyeSide(i),'os')
+                    if strcmpi(eyeSide,'os')
                         group_directions{n} = 'Temporal';
-                    elseif strcmpi(eyeSide(i),'od')
+                    elseif strcmpi(eyeSide,'od')
                         group_directions{n} = 'Nasal';
                         
                     end
                 else
-                    if strcmpi(eyeSide(i),'os')
+                    if strcmpi(eyeSide,'os')
                         group_directions{n} = 'Nasal';
-                    elseif strcmpi(eyeSide(i),'od')
+                    elseif strcmpi(eyeSide,'od')
                         group_directions{n} = 'Temporal';
                     end
                 end
@@ -598,30 +589,37 @@ if export_to_pshop
                 if ~isempty(imageFilename{m,n})
                     %Read each image, and then transform
                     im = imresize( imread(char(imageFilename{m,n})),pixelScale(n) ); % They need to be pretty for output! Keep it bicubic
-                    H = TotalTransform(:,:,n);
                     
+                    if size(im,3) == 2
+                        im=padarray(im, [length(vr) length(ur) 2]-size(im),0,'post');
+                    else
+                        im=padarray(im, [length(vr) length(ur)]-size(im),0,'post');
+                    end
+                    
+                    H = TotalTransform(:,:,n);
                     H = pinv(H');
-                    H(:,3)=[0;0;1]; 
-                   
-                    tform = affine2d(H*Global); 
-                    im_=imwarp(im, imref2d(size(im)), tform,'OutputView', imref2d(size(im))); 
+                    H(:,3)=[0;0;1];
+                  
+                    tform = affine2d(H*Global);
+                    im_=imwarp(im, imref2d(size(im)), tform,'OutputView', imref2d(size(im)));
                     
                     [pathstr,name,ext] = fileparts(char(imageFilename{m,n})) ;
                     
                     loadednames{m} = name;
                     
                     if size(im_,3) == 2
-                        %add to combined image
                         nonzero = im_(:,:,2)>0;
                         im_ = im_(:,:,1);
+                    else                        
+                        nonzero = im_>0;                            
+                    end
+                    
+                    if(isa(im,'double') || isa(im,'single'))
                         im_(:,:,1) = uint8(round(im_*255));
-                        im_(:,:,2) = uint8(round(nonzero*255));
+                        im_(:,:,2) = uint8(round(nonzero*255)); 
                     else
-                        im_ = im_(:,:,1);
-                        %add to combined image
-                        nonzero = im_>0;
-                        im_(:,:,1) = uint8(round(im_*255));
-                        im_(:,:,2) = uint8(round(nonzero*255));
+                        im_(:,:,1) = uint8(round(im_));
+                        im_(:,:,2) = uint8(round(nonzero*255)); 
                     end
                     
                     saveName=[name,'_aligned_to_ref',num2str(i),'_m',num2str(m)];
@@ -644,9 +642,9 @@ if export_to_pshop
     end
 end
 
-%  save tmp.mat;
-%%
 
+%save tmp.mat;
+%%
 for m = 1:MN
     
     %initialize blank combined image of all pieces for the modality
@@ -661,73 +659,62 @@ for m = 1:MN
                 if ~isempty(imageFilename{m,n})
                     %read each image, and then transform
                     im = imresize( imread(char(imageFilename{m,n})),pixelScale(n) );
-                    
 
                     H = TotalTransform(:,:,n);
-                    
                     H = pinv(H');
-                    H(:,3)=[0;0;1]; 
-                   
+                    H(:,3)=[0;0;1];
+                  
                     tform = affine2d(H*Global);
-                    %Adding one changes nothing, but ensures that we don't
-                    %clip out low parts of the image.
-                    im_=imwarp(im, imref2d(size(im)), tform,'OutputView', imref2d(size(imCombined))); 
+                    im_=imwarp(im, imref2d(size(im)), tform,'OutputView', imref2d(size(imCombined)));
                     
                     %save each individually transformed image
                     [pathstr,name,ext] = fileparts(char(imageFilename{m,n})) ;
-                    
-                    
-                    %we check the original type of the image and save accordingly
+
                     if size(im_,3) == 2
-                        %add to combined image
                         nonzero = im_(:,:,2)>0;
                         im_ = im_(:,:,1);
-                    else
-                        im_ = im_(:,:,1);
-                        nonzero = im_>0;
+                    else                        
+                        nonzero = im_>0;                            
                     end
-                    
+                                                
                     %add to combined image
                     imCombined(nonzero) = im_(nonzero);
-                    
+
                     %save
                     saveFileName=[name,'_aligned_to_ref',num2str(i),'_m',num2str(m),'.tif'];
                     
                     if(isa(im,'double') || isa(im,'single'))%if input was floating point, save as single
+                        im_(:,:,2) = nonzero; 
                         saveTifDouble(single(im_),outputDir,saveFileName);
                     else%else save as uint8
-                        %convert if output file is currently floating,
-                        if (isa(im_,'double') || isa(im,'single'))
-                            im_(:,:,1) = uint8(round(im_*255));
-                            im_(:,:,2) = uint8(round(nonzero*255));
-                        end
-                        %otherwise save
+                        im_(:,:,1) = uint8(round(im_));
+                        im_(:,:,2) = uint8(round(nonzero*255)); 
+
                         saveTif(im_,outputDir,saveFileName);
                     end
                     
                     numWritten = numWritten+1;
-                    waitbar(numWritten/(N*MN),h,strcat('Writing Outputs (',num2str(100*numWritten/(N*MN),3),'%)'));
+                    waitbar(numWritten./N*MN,h,['Writing Outputs (',num2str(100*numWritten./(N*MN),3),'%)']);
                 end
             end
+        end
         
+        %add to all combined image
+        nonzero = imCombined>0;
+        imCombinedAll(nonzero) = imCombined(nonzero);
+        imCombined(:,:,2) = round(nonzero*255);
         
-            %add to all combined image
-            nonzero = imCombined>0;
-            imCombinedAll(nonzero) = imCombined(nonzero);
-            imCombined(:,:,2) = round(nonzero*255);
-
-            %save combined image for each piece - removed for memory concerns.
-            if(NumOfRefs > 1)%only necessary if more than one piece
-                saveFileName = strcat('ref_',num2str(i),'_combined_m',num2str(m),'.tif');
-
-                if(AppendToExisting)
-                    outNameList{i+1,m}=fullfile('Append',saveFileName);
-                else
-                    outNameList{i+1,m}=saveFileName;
-                end
-
-                saveTif(imCombined,outputDir,saveFileName);
+        %save combined image for each piece - removed for memory concerns.
+        if(NumOfRefs > 1)%only necessary if more than one piece
+            saveFileName = strcat('ref_',num2str(i),'_combined_m',num2str(m),'.tif');
+            
+            if(AppendToExisting)
+                outNameList{i+1,m}=fullfile('Append',saveFileName);
+            else
+                outNameList{i+1,m}=saveFileName;
             end
+            
+            saveTif(imCombined,outputDir,saveFileName);
         end
     end
     
