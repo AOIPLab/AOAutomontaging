@@ -1,3 +1,9 @@
+# AOIP Info
+- 1.5.4 version in master branch
+- 1.5.6 quad version in quad_compatible branch
+- plugins associated with this live in burns
+- fix2am is a useful tool to use with this - in separate repository
+
 # AOAutomontaging
 Automontaging for AO images
 
