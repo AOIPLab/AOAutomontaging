@@ -1,6 +1,6 @@
 # AOIP Info
-- 1.5.4 version in master branch
-- 1.5.6 quad version in quad_compatible branch
+- 1.5.4 version in master branch - previously located: \\burns.rcc.mcw.edu\AOIP\1-Software\AO_Tools\2-AOProcessing\6-Montaging\AOAutomontaging\AOAutomontaging-1.5.4
+- 1.5.6 quad version in quad_compatible branch - previously located: \\burns.rcc.mcw.edu\AOIP\1-Software\AO_Tools\2-AOProcessing\6-Montaging\AOAutomontaging\AOAutomontaging-1.5.6_quad
 - plugins associated with this live in burns
 - fix2am is a useful tool to use with this - in separate repository
 
