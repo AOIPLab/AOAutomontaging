@@ -337,7 +337,8 @@ function outputFolder_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-selectedDir=uigetdir;
+defaultfolder = handles.imgfolder_name;
+selectedDir=uigetdir(defaultfolder);
 if(selectedDir == 0)
     return
 end
